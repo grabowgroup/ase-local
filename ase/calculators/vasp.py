@@ -131,7 +131,8 @@ string_keys = [
     'system',     # name of System
     'tebeg',      #
     'teend',      # temperature during run
-    'precfock',    # FFT grid in the HF related routines
+    'precfock',   # FFT grid in the HF related routines
+    'notes',      # Description of system
 ]
 
 int_keys = [
@@ -357,6 +358,17 @@ class Vasp(Calculator):
             # exchange correlation functional
             self.input_params = {'xc': 'PW91'}
 
+        if not kwargs.get('notes'):
+            raise ValueError('Must enter description of system with calculator flag "notes".')
+
+        else:
+            if len(kwargs.get('notes')) < 20:
+                raise ValueError('Description must be verbose (length > 20)')
+
+            else:
+                notes = open('NOTES', 'w')
+                notes.close()
+            
         self.input_params.update({
             'setups': None,    # Special setups (e.g pv, sv, ...)
             'txt': '-',     # Where to send information
@@ -1076,6 +1088,26 @@ class Vasp(Calculator):
         for n in range(len(self.sort)):
             file.write('%5i %5i \n' % (self.sort[n], self.resort[n]))
 
+    def write_notes(self):
+        """Writes a file NOTES
+
+        This file contains verbose information about the system.
+        Information in this file can be used to document work,
+        with explanation of need for calculation."""
+
+        pwd = os.getcwd()
+        vasp_pp_path = os.environ['VASP_PP_PATH']
+        vasp_exec = os.environ['VASP_EXEC']
+        notes = self.string_params['notes']
+        if os.path.exists('NOTES'):
+            file = open('NOTES'):
+            file.write('WD: {0}\n'.format(pwd))
+            file.write('Executable: {0}\n'.format(vasp_exec))
+            file.write('Pseudopotentials: {0}\n'.format(vasp_pp_path))
+            file.write('Notes: {0}\n'.format(notes))
+            file.close()
+            
+        
     # Methods for reading information from OUTCAR files:
     def read_energy(self, all=None):
         [energy_free, energy_zero] = [0, 0]
